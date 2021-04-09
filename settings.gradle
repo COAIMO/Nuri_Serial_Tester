@@ -1,0 +1,2 @@
+include ':app'
+rootProject.name = "Nuri_Serial_Tester"

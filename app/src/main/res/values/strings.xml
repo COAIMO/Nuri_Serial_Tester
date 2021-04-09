@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Nuri_Serial_Tester</string>
+    <string name="transmission">전송 : </string>
+    <string name="reception">수신 :</string>
+    <string name="error">ERROR :</string>
+    <string name="connection">연결</string>
+    <string name="disconnection">해제</string>
+    <string name="baudrate">속도 :</string>
+    <string name="converter_1">컨버터1</string>
+    <string name="converter_2">컨버터2</string>
+    <string name="tx">TX</string>
+    <string name="rx">RX</string>
+    <string name="devices">USB Devices</string>
+    <string name="thread">Thread :</string>
+</resources>
