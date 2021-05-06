@@ -87,17 +87,19 @@ class  SerialProtocol {
         // STX 부터 짜르기
         try {
             val idx = data.findFirst(stx)
-            Log.d("index", "인덱스 : $idx")
-            val datatmp: ByteArray = data.drop(idx).take(100).toByteArray()
-            Log.d("data", Hex.encodeHexString(datatmp))
+//            Log.d("index", "인덱스 : $idx")
+//            val datatmp: ByteArray = data.drop(idx).take(100).toByteArray()
+//            mData = data.drop(idx).take(100).toByteArray()
+            data.copyInto(mData, 0, idx, 100)
+//            Log.d("data", Hex.encodeHexString(mData))
             // 데이터 사이즈 체크
-            if (checkDataSize(datatmp)) {
+            if (checkDataSize(mData)) {
                 // 파싱 데이터 적제
-                datatmp.copyInto(mData)
+//                datatmp.copyInto(mData)
                 // 사이즈 헤더 비교 호출
                 if (checkHeader()) {
                     // 체크섬 비교 체크
-                    if (mData[4] == checkSumRecive(datatmp)) {
+                    if (mData[4] == checkSumRecive(mData)) {
                         //가비지 데이터 비교
                         if (checkGarbageData()) {
                             // 결과 응답

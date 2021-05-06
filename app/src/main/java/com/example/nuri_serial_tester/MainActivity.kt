@@ -235,8 +235,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun readData(port_index: Int = 0, retry: Int = 0): ByteArray? {
-        var buff: ByteArray = ByteArray(1024)
+    private fun readData(port_index: Int = 0, retry: Int = 0) {
+        val buff: ByteArray = ByteArray(1024)
         try {
             when (port_index) {
                 1 -> {
@@ -250,17 +250,16 @@ class MainActivity : AppCompatActivity() {
                         mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                         mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
                         Log.d("checkSum 1 -> 2", "false")
-
-                        return null
+//                        return null
                     }
                     mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                     mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
                     S_receiveCount++
                     mBinding.converter2RxTv.text = S_receiveCount.toString()
-                    var recvData: ByteArray = ByteArray(cnt)
+                    val recvData: ByteArray = ByteArray(cnt)
                     buff.copyInto(recvData, endIndex = cnt)
                     receive(recvData, 1)
-                    return recvData
+//                    return recvData
                 }
                 2 -> {
                     val cnt = port_1!!.read(buff, READ_WAIT_MILLIS)
@@ -273,23 +272,22 @@ class MainActivity : AppCompatActivity() {
                         mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                         mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
                         Log.d("checkSum 2 -> 1", "false")
-                        return null
+//                        return null
                     }
                     mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                     mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
                     M_receiveCount++
                     mBinding.converter1RxTv.text = M_receiveCount.toString()
-                    var recvData: ByteArray = ByteArray(cnt)
+                    val recvData: ByteArray = ByteArray(cnt)
                     buff.copyInto(recvData, endIndex = cnt)
                     receive(recvData, 2)
-                    return recvData
-
+//                    return recvData
                 }
             }
         } catch (e: NumberFormatException) {
-            return readData()
+//            return readData()
         }
-        return null
+//        return null
     }
 
     private fun receive(data: ByteArray, port_index: Int) {
