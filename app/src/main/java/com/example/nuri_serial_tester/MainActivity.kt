@@ -1,5 +1,6 @@
 package com.example.nuri_serial_tester
 
+import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -16,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.balsikandar.crashreporter.CrashReporter
 import com.example.nuri_serial_tester.databinding.ActivityMainBinding
 import com.hoho.android.usbserial.driver.UsbSerialDriver
 import com.hoho.android.usbserial.driver.UsbSerialPort
@@ -35,7 +37,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var m_usbManager: UsbManager
     private var connection_1: UsbDeviceConnection? = null
     private var connection_2: UsbDeviceConnection? = null
-    private lateinit var serialThread: Thread
+    private var serialThread: Thread? = null
     private val READ_WAIT_MILLIS = 1000
     private val WRITE_WAIT_MILLIS = 1000
     private val THREAD_SLEEP_MILLIS = arrayOf(210, 110, 60, 40, 30, 20, 15, 10, 8, 7, 5, 5, 5, 3, 3, 2, 2)
@@ -56,6 +58,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CrashReporter.initialize(this)
+
         mBinding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(mBinding.root)
         setSpinner()
@@ -211,7 +215,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        serialThread.start()
+        serialThread?.start()
     }
 
     private fun sendData(port_index: Int, data: ByteArray) {
@@ -220,18 +224,22 @@ class MainActivity : AppCompatActivity() {
             1 -> {
 //                port_1!!.purgeHwBuffers(true, true)
                 port_1!!.write(data, WRITE_WAIT_MILLIS)
-                mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_off)
-                mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_on)
                 MtoSsendCount++
-                mBinding.converter1TxTv.text = MtoSsendCount.toString()
+                runOnUiThread {
+                    mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                    mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                    mBinding.converter1TxTv.text = MtoSsendCount.toString()
+                }
             }
             2 -> {
 //                port_2!!.purgeHwBuffers(true, true)
                 port_2!!.write(data, WRITE_WAIT_MILLIS)
-                mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_off)
-                mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_on)
                 StoMsendCount++
-                mBinding.converter2TxTv.text = StoMsendCount.toString()
+                runOnUiThread {
+                    mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                    mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                    mBinding.converter2TxTv.text = StoMsendCount.toString()
+                }
             }
         }
     }
@@ -247,16 +255,21 @@ class MainActivity : AppCompatActivity() {
                             readData(MASTER_to_SLAVE, retry + 1)
                         else*/
                         S_errorCount++
-                        mBinding.converter2ErrorTv.text = S_errorCount.toString()
-                        mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
-                        mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        runOnUiThread {
+                            mBinding.converter2ErrorTv.text = S_errorCount.toString()
+                            mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                            mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        }
                         Log.d("checkSum 1 -> 2", "false")
 //                        return null
                     }
-                    mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
-                    mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
                     S_receiveCount++
-                    mBinding.converter2RxTv.text = S_receiveCount.toString()
+
+                    runOnUiThread {
+                        mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                        mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        mBinding.converter2RxTv.text = S_receiveCount.toString()
+                    }
                     val recvData: ByteArray = ByteArray(cnt)
                     buff.copyInto(recvData, endIndex = cnt)
                     receive(recvData, 1)
@@ -269,16 +282,21 @@ class MainActivity : AppCompatActivity() {
                             readData(SLAVE_to_MASTER, retry + 1)
                         else*/
                         M_errorCount++
-                        mBinding.converter1ErrorTv.text = M_errorCount.toString()
-                        mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
-                        mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        runOnUiThread {
+                            mBinding.converter1ErrorTv.text = M_errorCount.toString()
+                            mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                            mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        }
                         Log.d("checkSum 2 -> 1", "false")
 //                        return null
                     }
-                    mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
-                    mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
                     M_receiveCount++
-                    mBinding.converter1RxTv.text = M_receiveCount.toString()
+
+                    runOnUiThread {
+                        mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                        mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        mBinding.converter1RxTv.text = M_receiveCount.toString()
+                    }
                     val recvData: ByteArray = ByteArray(cnt)
                     buff.copyInto(recvData, endIndex = cnt)
                     receive(recvData, 2)
@@ -295,18 +313,26 @@ class MainActivity : AppCompatActivity() {
 //        val pars = SerialProtocol()
         if (parser.parse(data)) {
             if (port_index == 1) {
-                mBinding.converter2ErrorTv.text = S_errorCount.toString()
+                runOnUiThread {
+                    mBinding.converter2ErrorTv.text = S_errorCount.toString()
+                }
             } else if (port_index == 2) {
-                mBinding.converter1ErrorTv.text = M_errorCount.toString()
+                runOnUiThread {
+                    mBinding.converter1ErrorTv.text = M_errorCount.toString()
+                }
             }
         } else {
             if (port_index == 1) {
                 S_errorCount++
-                mBinding.converter2ErrorTv.text = S_errorCount.toString()
+                runOnUiThread {
+                    mBinding.converter2ErrorTv.text = S_errorCount.toString()
+                }
                 Log.d("checkSum 1 -> 2", "false")
             } else if (port_index == 2) {
                 M_errorCount++
-                mBinding.converter1ErrorTv.text = M_errorCount.toString()
+                runOnUiThread {
+                    mBinding.converter1ErrorTv.text = M_errorCount.toString()
+                }
                 Log.d("checkSum 2 -> 1", "false")
             }
 
@@ -340,12 +366,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun cancelSend() {
-        serialThread.interrupt()
+        serialThread?.interrupt()
         creatTextview("데이터 보내기를 취소하셨습니다.")
     }
 
     override fun onDestroy() {
-        serialThread.interrupt()
+        serialThread?.interrupt()
         disconnect()
         super.onDestroy()
     }
