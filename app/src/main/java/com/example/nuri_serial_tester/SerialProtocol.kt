@@ -1,6 +1,7 @@
 package com.example.nuri_serial_tester
 
 import android.util.Log
+import org.apache.commons.codec.binary.Hex
 import java.nio.ByteBuffer
 
 
@@ -8,7 +9,7 @@ class  SerialProtocol {
 
     var mData: ByteArray = ByteArray(100)
     var gData: ByteArray = ByteArray(93)
-
+    val stx = byteArrayOf(0xff.toByte(), 0xfe.toByte())
 
      fun BuildProtocol(cid: Byte, mode: Byte, data: Byte? = null): ByteArray {
         var ret: ByteArray
@@ -82,26 +83,52 @@ class  SerialProtocol {
     }
 
     fun parse(data: ByteArray):Boolean{
-        // 데이터 사이즈 체크
-        if (checkDataSize(data)){
-            // 파싱 데이터 적제
-            data.copyInto(mData)
-            // 사이즈 헤더 비교 호출
-            if (checkHeader()){
-                // 체크섬 비교 체크
-                if (mData[4] == checkSumRecive(data)){
-                    //가비지 데이터 비교
-                    if (checkGarbageData()){
-                        // 결과 응답
+
+        // STX 부터 짜르기
+        try {
+            val idx = data.findFirst(stx)
+            Log.d("index", "인덱스 : $idx")
+            val datatmp: ByteArray = data.drop(idx).take(100).toByteArray()
+            Log.d("data", Hex.encodeHexString(datatmp))
+            // 데이터 사이즈 체크
+            if (checkDataSize(datatmp)) {
+                // 파싱 데이터 적제
+                datatmp.copyInto(mData)
+                // 사이즈 헤더 비교 호출
+                if (checkHeader()) {
+                    // 체크섬 비교 체크
+                    if (mData[4] == checkSumRecive(datatmp)) {
+                        //가비지 데이터 비교
+                        if (checkGarbageData()) {
+                            // 결과 응답
+                        }
                     }
                 }
+            } else {
+                return false
             }
-        }else{
+        } catch (e: Exception){
             return false
         }
 
         return true
     }
+}
 
-
+fun ByteArray.findFirst(sequence: ByteArray,startFrom: Int = 0): Int {
+    if(sequence.isEmpty()) return -1
+    if(startFrom < 0 ) return -1
+    var matchOffset = 0
+    var start = startFrom
+    var offset = startFrom
+    while( offset < size ) {
+        if( this[offset] == sequence[matchOffset]) {
+            if( matchOffset++ == 0 ) start = offset
+            if( matchOffset == sequence.size ) return start
+        }
+        else
+            matchOffset = 0
+        offset++
+    }
+    return -1
 }

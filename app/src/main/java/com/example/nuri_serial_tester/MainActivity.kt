@@ -22,10 +22,11 @@ import com.hoho.android.usbserial.driver.UsbSerialPort
 import com.hoho.android.usbserial.driver.UsbSerialProber
 import com.hoho.android.usbserial.util.SerialInputOutputManager
 import java.io.IOException
+import org.apache.commons.codec.binary.Hex;
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mBinding: ActivityMainBinding
-    private var list_of_baudrate = arrayOf(4800, 9600, 19200, 38400, 115200)
+    private val list_of_baudrate = arrayOf(4800, 9600, 19200, 28800, 38400, 57600, 76800, 115200, 128000, 153600, 230400, 250000, 256000, 460800, 500000, 921600, 1000000)
     private lateinit var availableDrivers: List<UsbSerialDriver>
     private lateinit var driver_1: UsbSerialDriver
     private lateinit var driver_2: UsbSerialDriver
@@ -37,7 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var serialThread: Thread
     private val READ_WAIT_MILLIS = 1000
     private val WRITE_WAIT_MILLIS = 1000
-    private val THREAD_SLEEP_MILLIS: Long = 300
+    private val THREAD_SLEEP_MILLIS = arrayOf(210, 110, 60, 40, 30, 20, 15, 10, 8, 7, 5, 5, 5, 3, 3, 2, 2)
     private var MtoSsendCount: Int = 0
     private var StoMsendCount: Int = 0
     private var M_receiveCount: Int = 0
@@ -50,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private var usbIOManager: SerialInputOutputManager? = null
     private val FONT_SIZE = 10
     private var container: ScrollView? = null
+    private var SelectSleepMillis : Long = 210
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +97,7 @@ class MainActivity : AppCompatActivity() {
                     id: Long
             ) {//스피너가 선택 되었을때
                 creatTextview("Baud Rate : "+list_of_baudrate[position]+"선택했습니다.")
-
+                SelectSleepMillis = THREAD_SLEEP_MILLIS[position].toLong()
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>) {
@@ -106,6 +108,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun UsbConnecting() {
+        MtoSsendCount = 0
+        StoMsendCount = 0
+        M_errorCount = 0
+        M_receiveCount = 0
+        S_errorCount = 0
+        S_receiveCount = 0
+
         val usbDevice: UsbDevice? = null
         availableDrivers = emptyList()
         // 사용 가능한 Usb diver 찾기
@@ -124,13 +133,12 @@ class MainActivity : AppCompatActivity() {
                     PendingIntent.getBroadcast(this, 0, Intent(ACTION_USB_PERMISSION), 0)
             m_usbManager.requestPermission(availableDrivers[0].device, intent)
 
-            val intent2: PendingIntent =
+/*            val intent2: PendingIntent =
                     PendingIntent.getBroadcast(this, 0, Intent(ACTION_USB_PERMISSION), 0)
-            m_usbManager.requestPermission(availableDrivers[1].device, intent2)
+            m_usbManager.requestPermission(availableDrivers[1].device, intent2)*/
         }catch (e: Exception){
             creatTextview("USB Serial Port를 연결해주세요.")
         }
-
     }
 
     private val ACTION_USB_PERMISSION = "com.jeongmin.serial_nuri_tester.USB_PERMISSION"
@@ -154,7 +162,9 @@ class MainActivity : AppCompatActivity() {
                                 UsbSerialPort.PARITY_NONE
                         )
                         creatTextview("port1 : $port_1 정상 연결되었습니다.")
-
+                        val intent2: PendingIntent =
+                            PendingIntent.getBroadcast(context, 0, Intent(ACTION_USB_PERMISSION), 0)
+                        m_usbManager.requestPermission(availableDrivers[1].device, intent2)
                     }
 
                     if (m_usbManager.hasPermission(driver_2.device) && port_2 == null) {
@@ -182,22 +192,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun StratThread() {
         serialThread = Thread {
-            try {
-                while (true) {
-                    var data = SerialProtocol().BuzzerOn(SelectId.toByte())
-                    sendData(MASTER_to_SLAVE, data!!)
-                    Thread.sleep(THREAD_SLEEP_MILLIS)
-                    data = readData(MASTER_to_SLAVE)
-                    Thread.sleep(THREAD_SLEEP_MILLIS)
-                    sendData(SLAVE_to_MASTER, data!!)
-                    Thread.sleep(THREAD_SLEEP_MILLIS)
-                    data = readData(SLAVE_to_MASTER)
-                    Thread.sleep(THREAD_SLEEP_MILLIS)
+            var data = SerialProtocol().BuzzerOn(SelectId.toByte())
+            while (true) {
+                try {
+                        sendData(MASTER_to_SLAVE, data!!)
+                        Thread.sleep(SelectSleepMillis)
+                        readData(MASTER_to_SLAVE)
+                        Thread.sleep(SelectSleepMillis)
+                        sendData(SLAVE_to_MASTER, data!!)
+                        Thread.sleep(SelectSleepMillis)
+                        readData(SLAVE_to_MASTER)
+                        Thread.sleep(SelectSleepMillis)
+                } catch (th: InterruptedException){
+                  break
+                } catch (e: Exception) {
+                    Log.d("Error", "========================================")
                 }
-            } catch (e: Exception) {
-                Log.d("checkSum2", "========================================")
             }
-
         }
         serialThread.start()
     }
@@ -230,11 +241,17 @@ class MainActivity : AppCompatActivity() {
             when (port_index) {
                 1 -> {
                     val cnt = port_2!!.read(buff, READ_WAIT_MILLIS)
-                    if (cnt == 0) {
-                        return if (retry < 5)
+                    if (cnt < 100) {
+/*                        return if (retry < 5)
                             readData(MASTER_to_SLAVE, retry + 1)
-                        else
-                            return null
+                        else*/
+                        S_errorCount++
+                        mBinding.converter2ErrorTv.text = S_errorCount.toString()
+                        mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                        mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        Log.d("checkSum 1 -> 2", "false")
+
+                        return null
                     }
                     mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                     mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
@@ -247,11 +264,16 @@ class MainActivity : AppCompatActivity() {
                 }
                 2 -> {
                     val cnt = port_1!!.read(buff, READ_WAIT_MILLIS)
-                    if (cnt == 0) {
-                        return if (retry < 5)
+                    if (cnt < 100) {
+/*                        return if (retry < 5)
                             readData(SLAVE_to_MASTER, retry + 1)
-                        else
-                            return null
+                        else*/
+                        M_errorCount++
+                        mBinding.converter1ErrorTv.text = M_errorCount.toString()
+                        mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
+                        mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
+                        Log.d("checkSum 2 -> 1", "false")
+                        return null
                     }
                     mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                     mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
