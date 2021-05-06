@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     private val FONT_SIZE = 10
     private var container: ScrollView? = null
     private var SelectSleepMillis : Long = 210
+    private val parser = SerialProtocol()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -192,7 +193,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun StratThread() {
         serialThread = Thread {
-            var data = SerialProtocol().BuzzerOn(SelectId.toByte())
+            var data = parser.BuzzerOn(SelectId.toByte())
             while (true) {
                 try {
                         sendData(MASTER_to_SLAVE, data!!)
@@ -291,8 +292,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun receive(data: ByteArray, port_index: Int) {
-        val pars = SerialProtocol()
-        if (pars.parse(data)) {
+//        val pars = SerialProtocol()
+        if (parser.parse(data)) {
             if (port_index == 1) {
                 mBinding.converter2ErrorTv.text = S_errorCount.toString()
             } else if (port_index == 2) {
