@@ -274,6 +274,7 @@ class MainActivity : AppCompatActivity() {
                     buff.copyInto(recvData, endIndex = cnt)
                     receive(recvData, 1)
 //                    return recvData
+                    return
                 }
                 2 -> {
                     val cnt = port_1!!.read(buff, READ_WAIT_MILLIS)
@@ -289,6 +290,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         Log.d("checkSum 2 -> 1", "false")
 //                        return null
+                        return
                     }
                     M_receiveCount++
 
