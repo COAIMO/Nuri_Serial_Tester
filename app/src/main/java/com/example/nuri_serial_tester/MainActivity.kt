@@ -17,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.children
 import com.balsikandar.crashreporter.CrashReporter
 import com.example.nuri_serial_tester.databinding.ActivityMainBinding
 import com.hoho.android.usbserial.driver.UsbSerialDriver
@@ -197,6 +198,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun StratThread() {
+        if (port_1 == null || port_2 == null)
+            return
+
         serialThread = Thread {
             var data = parser.BuzzerOn(SelectId.toByte())
             dataSize = parser.getDataSize()
@@ -342,10 +346,12 @@ class MainActivity : AppCompatActivity() {
         //layout_width, layout_height, gravity 설정
         val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         lp.gravity = Gravity.CENTER
-        addTextView.layoutParams
+        //addTextView.layoutParams
 
-        //부모 뷰에 추가
-        mBinding.textViewer.addView(addTextView)
+        runOnUiThread {
+            //부모 뷰에 추가
+            mBinding.textViewer.addView(addTextView)
+        }
     }
     private fun disconnect() {
         try {
@@ -355,8 +361,8 @@ class MainActivity : AppCompatActivity() {
         }
         port_1 = null
         port_2 = null
+        mBinding.textViewer.removeAllViews()
         creatTextview("Serial port가 연결을 해제하였습니다.")
-
     }
 
     private fun cancelSend() {
