@@ -6,19 +6,19 @@ import java.nio.ByteBuffer
 
 
 class  SerialProtocol {
-
-    var mData: ByteArray = ByteArray(100)
-    var gData: ByteArray = ByteArray(93)
+    val size: Int = 50
+    var mData: ByteArray = ByteArray(size)
+    var gData: ByteArray = ByteArray(size-7)
     val stx = byteArrayOf(0xff.toByte(), 0xfe.toByte())
 
      fun BuildProtocol(cid: Byte, mode: Byte, data: Byte? = null): ByteArray {
         var ret: ByteArray
         if (data == null) {
-            ret = ByteArray(100)
+            ret = ByteArray(size)
             ret[3] = 2
         } else {
 
-            ret = ByteArray(100)
+            ret = ByteArray(size)
             ret[3] = 3
             ret[6] = data
 //            for (i in 7..99){
@@ -32,6 +32,10 @@ class  SerialProtocol {
 
         ret[4] = checkSum(cid, mode, data)
         return ret
+    }
+
+    fun getDataSize(): Int{
+        return mData.size
     }
 
     fun BuzzerOn(cid: Byte): ByteArray? {
@@ -78,7 +82,7 @@ class  SerialProtocol {
     }
 
     fun checkGarbageData(): Boolean {
-        val temp = mData.sliceArray(7..99)
+        val temp = mData.sliceArray(7 until size)
         return ( gData.contentEquals(temp))
     }
 
@@ -90,8 +94,9 @@ class  SerialProtocol {
 //            Log.d("index", "인덱스 : $idx")
 //            val datatmp: ByteArray = data.drop(idx).take(100).toByteArray()
 //            mData = data.drop(idx).take(100).toByteArray()
-            data.copyInto(mData, 0, idx, 100)
-//            Log.d("data", Hex.encodeHexString(mData))
+            Log.d("data", Hex.encodeHexString(data))
+            data.copyInto(mData, 0, idx, size)
+
             // 데이터 사이즈 체크
             if (checkDataSize(mData)) {
                 // 파싱 데이터 적제

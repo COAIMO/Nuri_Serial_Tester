@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private var container: ScrollView? = null
     private var SelectSleepMillis : Long = 210
     private val parser = SerialProtocol()
+    private var dataSize: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -198,6 +199,9 @@ class MainActivity : AppCompatActivity() {
     private fun StratThread() {
         serialThread = Thread {
             var data = parser.BuzzerOn(SelectId.toByte())
+            dataSize = parser.getDataSize()
+            port_2!!.purgeHwBuffers(true, true)
+            port_1!!.purgeHwBuffers(true, true)
             while (true) {
                 try {
                         sendData(MASTER_to_SLAVE, data!!)
@@ -222,7 +226,7 @@ class MainActivity : AppCompatActivity() {
 
         when (port_index) {
             1 -> {
-//                port_1!!.purgeHwBuffers(true, true)
+ //               port_1!!.purgeHwBuffers(true, true)
                 port_1!!.write(data, WRITE_WAIT_MILLIS)
                 MtoSsendCount++
                 runOnUiThread {
@@ -250,21 +254,22 @@ class MainActivity : AppCompatActivity() {
             when (port_index) {
                 1 -> {
                     val cnt = port_2!!.read(buff, READ_WAIT_MILLIS)
-                    if (cnt < 100) {
+                    if (cnt < dataSize) {
 /*                        return if (retry < 5)
                             readData(MASTER_to_SLAVE, retry + 1)
                         else*/
                         S_errorCount++
                         runOnUiThread {
+                            mBinding.converter2RxTv.text = S_receiveCount.toString()
                             mBinding.converter2ErrorTv.text = S_errorCount.toString()
                             mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                             mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
                         }
                         Log.d("checkSum 1 -> 2", "false")
 //                        return null
+                        return
                     }
                     S_receiveCount++
-
                     runOnUiThread {
                         mBinding.converter2RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                         mBinding.converter1TxBtn.setBackgroundResource(R.drawable.round_btn_off)
@@ -272,18 +277,18 @@ class MainActivity : AppCompatActivity() {
                     }
                     val recvData: ByteArray = ByteArray(cnt)
                     buff.copyInto(recvData, endIndex = cnt)
-                    receive(recvData, 1)
+                    receive(recvData, port_index)
 //                    return recvData
-                    return
                 }
                 2 -> {
                     val cnt = port_1!!.read(buff, READ_WAIT_MILLIS)
-                    if (cnt < 100) {
+                    if (cnt < dataSize) {
 /*                        return if (retry < 5)
                             readData(SLAVE_to_MASTER, retry + 1)
                         else*/
                         M_errorCount++
                         runOnUiThread {
+                            mBinding.converter1RxTv.text = M_receiveCount.toString()
                             mBinding.converter1ErrorTv.text = M_errorCount.toString()
                             mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                             mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
@@ -293,7 +298,6 @@ class MainActivity : AppCompatActivity() {
                         return
                     }
                     M_receiveCount++
-
                     runOnUiThread {
                         mBinding.converter1RxBtn.setBackgroundResource(R.drawable.round_btn_on)
                         mBinding.converter2TxBtn.setBackgroundResource(R.drawable.round_btn_off)
@@ -301,7 +305,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     val recvData: ByteArray = ByteArray(cnt)
                     buff.copyInto(recvData, endIndex = cnt)
-                    receive(recvData, 2)
+                    receive(recvData, port_index)
 //                    return recvData
                 }
             }
@@ -313,31 +317,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun receive(data: ByteArray, port_index: Int) {
 //        val pars = SerialProtocol()
-        if (parser.parse(data)) {
-            if (port_index == 1) {
-                runOnUiThread {
-                    mBinding.converter2ErrorTv.text = S_errorCount.toString()
-                }
-            } else if (port_index == 2) {
-                runOnUiThread {
-                    mBinding.converter1ErrorTv.text = M_errorCount.toString()
-                }
-            }
-        } else {
+        if (!parser.parse(data)) {
             if (port_index == 1) {
                 S_errorCount++
-                runOnUiThread {
-                    mBinding.converter2ErrorTv.text = S_errorCount.toString()
-                }
                 Log.d("checkSum 1 -> 2", "false")
             } else if (port_index == 2) {
                 M_errorCount++
-                runOnUiThread {
-                    mBinding.converter1ErrorTv.text = M_errorCount.toString()
-                }
                 Log.d("checkSum 2 -> 1", "false")
             }
+        }
 
+        runOnUiThread {
+            mBinding.converter2ErrorTv.text = S_errorCount.toString()
+            mBinding.converter1ErrorTv.text = M_errorCount.toString()
         }
     }
 
